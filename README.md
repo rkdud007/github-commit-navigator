@@ -17,3 +17,7 @@ https://www.youtube.com/watch?v=yUjlOz5hyF4
 - Works on all GitHub repository pages
 - Maintains scroll position when moving between commits
 - Provides visual feedback when navigating
+
+
+### License
+GitHub Commit Navigator is open source software licensed under the MIT License
