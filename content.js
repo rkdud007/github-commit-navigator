@@ -20,7 +20,6 @@ function showMessage(message, duration = 5000) {
   messageElement.textContent = message;
   messageElement.style.display = "block";
   messageElement.style.opacity = "1";
-
   setTimeout(() => {
     messageElement.style.opacity = "0";
     setTimeout(() => {
@@ -34,14 +33,29 @@ function parseGitHubUrl() {
   const pathParts = window.location.pathname.split("/").filter(Boolean);
   const owner = pathParts[0];
   const repo = pathParts[1];
+  const isRepoRoot = pathParts.length === 2;
   const commitHash = pathParts.find((part) => part.length === 40);
   const viewType = pathParts.includes("blob") ? "blob" : "tree";
-
-  const commitIndex = pathParts.indexOf(commitHash);
-  const prePath = pathParts.slice(0, commitIndex).join("/");
-  const postPath = pathParts.slice(commitIndex + 1).join("/");
-
-  return { owner, repo, commitHash, viewType, prePath, postPath };
+  const commitOrBranchIndex = isRepoRoot
+    ? -1
+    : pathParts.findIndex((part) => part === "tree" || part === "blob") + 1;
+  const commitOrBranch = isRepoRoot ? null : pathParts[commitOrBranchIndex];
+  const prePath = isRepoRoot
+    ? `${owner}/${repo}`
+    : pathParts.slice(0, commitOrBranchIndex).join("/");
+  const postPath = isRepoRoot
+    ? ""
+    : pathParts.slice(commitOrBranchIndex + 1).join("/");
+  return {
+    owner,
+    repo,
+    commitHash,
+    commitOrBranch,
+    viewType,
+    prePath,
+    postPath,
+    isRepoRoot,
+  };
 }
 
 // Event listener for key presses
@@ -57,13 +71,35 @@ document.addEventListener("keydown", function (e) {
 
 // Function to navigate commits
 async function navigateCommit(direction) {
-  const { owner, repo, commitHash, viewType, prePath, postPath } =
-    parseGitHubUrl();
+  const {
+    owner,
+    repo,
+    commitHash,
+    commitOrBranch,
+    viewType,
+    prePath,
+    postPath,
+    isRepoRoot,
+  } = parseGitHubUrl();
 
   try {
+    let currentCommitHash = commitHash;
+    if (!currentCommitHash) {
+      // If we don't have a commit hash, fetch the latest commit for the branch or default branch
+      currentCommitHash = await fetchLatestCommit(
+        owner,
+        repo,
+        commitOrBranch || "HEAD",
+      );
+      if (!currentCommitHash) {
+        showMessage("Unable to fetch the latest commit");
+        return;
+      }
+    }
+
     const commits = await fetchCommits(owner, repo);
     const currentIndex = commits.findIndex(
-      (commit) => commit.sha === commitHash,
+      (commit) => commit.sha === currentCommitHash,
     );
 
     if (currentIndex === -1) {
@@ -79,7 +115,12 @@ async function navigateCommit(direction) {
     }
 
     const newCommit = commits[newIndex];
-    const newUrl = `https://github.com/${prePath}/${newCommit.sha}/${postPath}`;
+    let newUrl;
+    if (isRepoRoot) {
+      newUrl = `https://github.com/${prePath}/tree/${newCommit.sha}`;
+    } else {
+      newUrl = `https://github.com/${prePath}/${newCommit.sha}/${postPath}`;
+    }
 
     // Save current scroll position
     const scrollPosition = window.scrollY;
@@ -103,6 +144,18 @@ async function fetchCommits(owner, repo) {
     throw new Error(`GitHub API request failed: ${response.status}`);
   }
   return await response.json();
+}
+
+// Function to fetch the latest commit for a branch
+async function fetchLatestCommit(owner, repo, branch) {
+  const apiUrl = `https://api.github.com/repos/${owner}/${repo}/commits/${branch}`;
+  const response = await fetch(apiUrl);
+  if (!response.ok) {
+    console.error(`Failed to fetch latest commit: ${response.status}`);
+    return null;
+  }
+  const data = await response.json();
+  return data.sha;
 }
 
 // Function to restore scroll position

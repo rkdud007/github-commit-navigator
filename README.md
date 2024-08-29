@@ -4,6 +4,8 @@ Navigate through commit history on GitHub using arrow keys
 
 ![](.github/icon128.png)
 
+[![available in the chrome web store](https://github.com/tiagofneto/betherscan/assets/46165861/50947291-76c5-4b7e-8299-90332b21b8f6)](https://chromewebstore.google.com/detail/cgigcpdhbflnpjhljhjdmhglbndoaiej)
+
 ### why
 
 You know.. sometimes I just want to stalk how other people built some project from scratch, just revisit the initial commit, and enjoy the art of the project getting mature time by time. And i was a bit lazy to clone the repo and also was a bit lazy to browse commits one by one. So yes this is for lazy people who want to enjoy the art of committing history -- enjoy!
@@ -18,6 +20,6 @@ https://www.youtube.com/watch?v=yUjlOz5hyF4
 - Maintains scroll position when moving between commits
 - Provides visual feedback when navigating
 
-
 ### License
+
 GitHub Commit Navigator is open source software licensed under the MIT License
